@@ -9,10 +9,54 @@ import plotly.graph_objects as go
 # Run with: streamlit run streamlit_test.py
 
 
-st.set_page_config(page_title="Advanced Calculator", layout="wide")
+st.set_page_config(
+    page_title="Advanced Calculator",
+    page_icon="🔢",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://www.streamlit.io',
+        'Report a bug': "https://www.github.com/streamlit/streamlit/issues",
+        'About': "# This is a header. This is an *extremely* cool app!"
+    }
+)
 
-st.title("Advanced Calculator")
+st.title("🔢 Advanced Calculator")
 st.write("A multi-mode calculator with Basic, Scientific, Financial, and Expression modes.")
+
+# --- Custom CSS for a more modern look ---
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #f0f2f6;
+    }
+    .stButton>button {
+        color: #fff;
+        background-color: #ff4b4b;
+        border-radius: 8px;
+        border: none;
+    }
+    .stButton>button:hover {
+        background-color: #ff6a6a;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 24px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #F0F0F0;
+        border-radius: 4px 4px 0px 0px;
+        gap: 1px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #FFFFFF;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 
 # --- Safe expression evaluator ---
 # Based on a whitelist approach using ast
@@ -168,7 +212,7 @@ def render_expression_evaluator():
 def render_financial_calculator():
     st.subheader("Financial Calculator")
 
-    tab1, tab2, tab3 = st.tabs(["Loan Payment", "Compound Interest", "Savings Goal"])
+    tab1, tab2, tab3 = st.tabs(["💵 Loan Payment", "📈 Compound Interest", "💰 Savings Goal"])
 
     with tab1:
         st.header("Loan Payment Calculator")
@@ -250,17 +294,19 @@ def render_financial_calculator():
 
 # --- UI ---
 MODES = {
-    "Basic": render_basic_calculator,
-    "Scientific": render_scientific_calculator,
-    "Financial": render_financial_calculator,
-    "Expression": render_expression_evaluator,
+    "🔢 Basic": render_basic_calculator,
+    "🔬 Scientific": render_scientific_calculator,
+    "💹 Financial": render_financial_calculator,
+    "🧮 Expression": render_expression_evaluator,
 }
 
-mode = st.sidebar.selectbox("Mode", list(MODES.keys()))
+# Add icons to the mode selection
+mode_selection = st.sidebar.selectbox("Mode", list(MODES.keys()))
+
 
 # Render the selected mode
-if mode in MODES:
-    MODES[mode]()
+if mode_selection in MODES:
+    MODES[mode_selection]()
 
 # --- History and controls ---
 st.sidebar.markdown("### History")
