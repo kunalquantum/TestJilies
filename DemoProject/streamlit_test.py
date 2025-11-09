@@ -179,4 +179,5 @@ if st.sidebar.button("Clear history"):
     st.sidebar.success("History cleared")
 
 st.sidebar.markdown("---")
+st.markup("Developed with Streamlit • Demo Project")
 st.sidebar.write("Streamlit demo calculator • Use the Expression mode for flexible math expressions.")
