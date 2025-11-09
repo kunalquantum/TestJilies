@@ -3,6 +3,7 @@ import math
 import ast
 import operator as op
 import plotly.graph_objects as go
+import numpy as np
 
 # streamlit_test.py
 # Demo calculator Streamlit app
@@ -22,7 +23,7 @@ st.set_page_config(
 )
 
 st.title("🔢 Advanced Calculator")
-st.write("A multi-mode calculator with Basic, Scientific, Financial, and Expression modes.")
+st.write("A multi-mode calculator with Basic, Scientific, Financial, Graphing, and Expression modes.")
 
 # --- Custom CSS for a more modern look ---
 st.markdown("""
@@ -61,7 +62,14 @@ st.markdown("""
 # --- Safe expression evaluator ---
 # Based on a whitelist approach using ast
 ALLOWED_NAMES = {k: getattr(math, k) for k in dir(math) if not k.startswith("__")}
+NP_ALLOWED = {
+    'np': np, 'sin': np.sin, 'cos': np.cos, 'tan': np.tan, 'sqrt': np.sqrt,
+    'log': np.log, 'log10': np.log10, 'exp': np.exp, 'pi': np.pi, 'e': np.e,
+    'abs': np.abs, 'power': np.power, 'linspace': np.linspace
+}
+ALLOWED_NAMES.update(NP_ALLOWED)
 ALLOWED_NAMES.update({"abs": abs, "round": round, "pow": pow})
+
 
 ALLOWED_OPERATORS = {
     ast.Add: op.add,
@@ -76,11 +84,14 @@ ALLOWED_OPERATORS = {
 }
 
 
-def safe_eval(expr: str):
+def safe_eval(expr: str, context: dict = None):
     """
     Evaluate a numeric Python expression safely using ast.
     Supports numbers, parentheses, unary/binary ops and whitelisted math functions.
     """
+    if context is None:
+        context = {}
+
     try:
         node = ast.parse(expr, mode="eval")
     except Exception as e:
@@ -89,8 +100,6 @@ def safe_eval(expr: str):
     def _eval(node):
         if isinstance(node, ast.Expression):
             return _eval(node.body)
-        if isinstance(node, ast.Num):  # < Py3.8
-            return node.n
         if hasattr(ast, "Constant") and isinstance(node, ast.Constant):  # Py3.8+
             if isinstance(node.value, (int, float)):
                 return node.value
@@ -115,6 +124,8 @@ def safe_eval(expr: str):
             args = [_eval(arg) for arg in node.args]
             return ALLOWED_NAMES[func_name](*args)
         if isinstance(node, ast.Name):
+            if node.id in context:
+                return context[node.id]
             if node.id in ALLOWED_NAMES:
                 return ALLOWED_NAMES[node.id]
             raise ValueError(f"Name {node.id} is not allowed")
@@ -292,11 +303,53 @@ def render_financial_calculator():
                 st.error(f"Error: {e}")
 
 
+def render_graphing_calculator():
+    st.subheader("Graphing Calculator")
+    st.caption("Enter one or more functions to plot. Use 'x' as the variable. Example: sin(x), x**2")
+
+    functions_str = st.text_area("Functions (one per line)", value="sin(x)\ncos(x)")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        x_min = st.number_input("x-min", value=-10.0)
+    with col2:
+        x_max = st.number_input("x-max", value=10.0)
+
+    if st.button("Plot Functions"):
+        try:
+            functions = [f.strip() for f in functions_str.split('\n') if f.strip()]
+            if not functions:
+                st.warning("Please enter at least one function.")
+                return
+
+            x_values = np.linspace(x_min, x_max, 400)
+
+            fig = go.Figure()
+
+            for func_str in functions:
+                context = {'x': x_values}
+                y_values = safe_eval(func_str, context)
+                fig.add_trace(go.Scatter(x=x_values, y=y_values, mode='lines', name=func_str))
+
+            fig.update_layout(
+                title="Function Plot",
+                xaxis_title="x",
+                yaxis_title="f(x)",
+                legend_title="Functions"
+            )
+            st.plotly_chart(fig)
+            st.session_state.history.append(f"Plotted: {', '.join(functions)}")
+
+        except Exception as e:
+            st.error(f"Error plotting function: {e}")
+
+
 # --- UI ---
 MODES = {
     "🔢 Basic": render_basic_calculator,
     "🔬 Scientific": render_scientific_calculator,
     "💹 Financial": render_financial_calculator,
+    "📈 Graphing": render_graphing_calculator,
     "🧮 Expression": render_expression_evaluator,
 }
 
